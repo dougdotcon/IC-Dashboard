@@ -78,7 +78,8 @@ KPI_CARD_STYLE = {
     'backgroundColor': 'white',
     'padding': '20px',
     'textAlign': 'center',
-    'height': '100%',
+    'minHeight': '180px',  # Definindo uma altura mínima para acomodar o texto
+    'height': 'auto',      # Permitindo que o card cresça conforme necessário
     'display': 'flex',
     'flexDirection': 'column',
     'justifyContent': 'center',
@@ -122,30 +123,28 @@ total_respondentes = len(df)
 escala_6x1_count = df[df['Escala6x1'] == 'Sim'].shape[0]
 escala_6x1_percent = round((escala_6x1_count / total_respondentes) * 100, 1)
 
-# Calcular tempo médio na escala 6x1
-tempo_mapping = {
-    'Menos de 1 ano': 0.5,
-    '1-2 anos': 1.5,
-    '3-5 anos': 4,
-    'Mais de 5 anos': 6
-}
+# Calcular porcentagem de homens e mulheres
+sexo_counts = df['Sexo'].value_counts()
+total_sexo = sexo_counts.sum()
+homens_count = sexo_counts.get('Masculino', 0)
+mulheres_count = sexo_counts.get('Feminino', 0)
+homens_percent = round((homens_count / total_sexo) * 100)
+mulheres_percent = round((mulheres_count / total_sexo) * 100)
 
-# Tentar converter os valores de tempo para numéricos
-try:
-    df['TempoNumerico'] = df['TempoEscala6x1'].map(tempo_mapping)
-    tempo_medio = round(df['TempoNumerico'].mean(), 1)
-except:
-    tempo_medio = "N/A"
+# Calcular resposta mais frequente para impacto na vida familiar
+familia_resposta_frequente = df['ImpactoVidaFamiliar'].value_counts().idxmax()
+familia_resposta_count = df['ImpactoVidaFamiliar'].value_counts().max()
+familia_resposta_percent = round((familia_resposta_count / total_respondentes) * 100)
 
-# Calcular percentuais de impacto
-impacto_familia_positivo = df[df['ImpactoVidaFamiliar'].isin(['Concordo', 'Concordo totalmente'])].shape[0]
-impacto_familia_percent = round((impacto_familia_positivo / total_respondentes) * 100, 1)
+# Calcular resposta mais frequente para impacto na saúde física
+fisica_resposta_frequente = df['ImpactoSaudeFisica'].value_counts().idxmax()
+fisica_resposta_count = df['ImpactoSaudeFisica'].value_counts().max()
+fisica_resposta_percent = round((fisica_resposta_count / total_respondentes) * 100)
 
-impacto_saude_fisica = df[df['ImpactoSaudeFisica'].isin(['Concordo', 'Concordo totalmente'])].shape[0]
-impacto_saude_fisica_percent = round((impacto_saude_fisica / total_respondentes) * 100, 1)
-
-impacto_saude_mental = df[df['ImpactoSaudeMental'].isin(['Concordo', 'Concordo totalmente'])].shape[0]
-impacto_saude_mental_percent = round((impacto_saude_mental / total_respondentes) * 100, 1)
+# Calcular resposta mais frequente para impacto na saúde mental
+mental_resposta_frequente = df['ImpactoSaudeMental'].value_counts().idxmax()
+mental_resposta_count = df['ImpactoSaudeMental'].value_counts().max()
+mental_resposta_percent = round((mental_resposta_count / total_respondentes) * 100)
 
 # Define the order of responses
 order = ["Discordo totalmente", "Discordo", "Neutro", "Concordo", "Concordo totalmente"]
@@ -292,6 +291,7 @@ estado_bar.update_traces(
 app = dash.Dash(
     __name__,
     title="Dashboard 6x1",
+    suppress_callback_exceptions=True,  # Add this to suppress callback exceptions for components not in initial layout
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}]
 )
 
@@ -332,40 +332,57 @@ dashboard_tab = html.Div([
                 html.Div(f"{escala_6x1_count} de {total_respondentes} respondentes",
                          style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7'})
             ], style=KPI_CARD_STYLE)
-        ], style={'width': '24%', 'display': 'inline-block', 'marginRight': '1%'}),
+        ], style={'width': '19%', 'display': 'inline-block', 'marginRight': '1%'}),
 
-        # KPI 2 - Tempo médio na escala
+        # KPI 2 - Distribuição por sexo
         html.Div([
             html.Div([
-                html.Div("⏱️", style=KPI_ICON_STYLE),
-                html.Div("Tempo Médio na Escala", style=KPI_LABEL_STYLE),
-                html.Div(f"{tempo_medio} anos", style=KPI_VALUE_STYLE),
-                html.Div("Média entre respondentes",
-                         style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7'})
-            ], style=KPI_CARD_STYLE)
-        ], style={'width': '24%', 'display': 'inline-block', 'marginRight': '1%'}),
+                html.Div("👫", style=KPI_ICON_STYLE),
+                html.Div("Distribuição por Sexo", style=KPI_LABEL_STYLE),
+                html.Div([
+                    html.Span(f"H: {homens_percent}%", style={'marginRight': '10px'}),
+                    html.Span(f"M: {mulheres_percent}%")
+                ], style=KPI_VALUE_STYLE),
+                html.Div(f"{homens_count} homens, {mulheres_count} mulheres",
+                         style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7', 'whiteSpace': 'nowrap'})
+            ], style={**KPI_CARD_STYLE, 'whiteSpace': 'nowrap'})
+        ], style={'width': '19%', 'display': 'inline-block', 'marginRight': '1%'}),
 
         # KPI 3 - Impacto na vida familiar
         html.Div([
             html.Div([
                 html.Div("👪", style=KPI_ICON_STYLE),
                 html.Div("Impacto na Vida Familiar", style=KPI_LABEL_STYLE),
-                html.Div(f"{impacto_familia_percent}%", style=KPI_VALUE_STYLE),
-                html.Div("Concordam com impacto negativo",
-                         style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7'})
+                html.Div(f"{familia_resposta_percent}%", style=KPI_VALUE_STYLE),
+                html.Div(f"Resposta mais frequente: {familia_resposta_frequente}",
+                         style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7',
+                                'wordWrap': 'break-word', 'width': '100%'})
             ], style=KPI_CARD_STYLE)
-        ], style={'width': '24%', 'display': 'inline-block', 'marginRight': '1%'}),
+        ], style={'width': '19%', 'display': 'inline-block', 'marginRight': '1%'}),
 
-        # KPI 4 - Impacto na saúde
+        # KPI 4 - Impacto na saúde física
         html.Div([
             html.Div([
-                html.Div("🩺", style=KPI_ICON_STYLE),
-                html.Div("Impacto na Saúde", style=KPI_LABEL_STYLE),
-                html.Div(f"{impacto_saude_mental_percent}%", style=KPI_VALUE_STYLE),
-                html.Div("Relatam impacto na saúde mental",
-                         style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7'})
+                html.Div("💪", style=KPI_ICON_STYLE),
+                html.Div("Impacto na Saúde Física", style=KPI_LABEL_STYLE),
+                html.Div(f"{fisica_resposta_percent}%", style=KPI_VALUE_STYLE),
+                html.Div(f"Resposta mais frequente: {fisica_resposta_frequente}",
+                         style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7',
+                                'wordWrap': 'break-word', 'width': '100%'})
             ], style=KPI_CARD_STYLE)
-        ], style={'width': '24%', 'display': 'inline-block'}),
+        ], style={'width': '19%', 'display': 'inline-block', 'marginRight': '1%'}),
+
+        # KPI 5 - Impacto na saúde mental
+        html.Div([
+            html.Div([
+                html.Div("🧠", style=KPI_ICON_STYLE),
+                html.Div("Impacto na Saúde Mental", style=KPI_LABEL_STYLE),
+                html.Div(f"{mental_resposta_percent}%", style=KPI_VALUE_STYLE),
+                html.Div(f"Resposta mais frequente: {mental_resposta_frequente}",
+                         style={'fontSize': '12px', 'color': COLORS['text'], 'opacity': '0.7',
+                                'wordWrap': 'break-word', 'width': '100%'})
+            ], style=KPI_CARD_STYLE)
+        ], style={'width': '19%', 'display': 'inline-block'}),
     ], style={'marginBottom': '25px'}),
 
     # First row - Impact charts
@@ -420,285 +437,7 @@ dashboard_tab = html.Div([
     ]),
 ])
 
-# Create the add data tab content with form
-add_data_tab = html.Div([
-    html.Div([
-        html.Div([
-            html.H3("Adicionar Novos Dados", style={'color': COLORS['title'], 'textAlign': 'center', 'marginBottom': '10px'}),
-            html.P("Preencha o formulário abaixo para adicionar novos dados à pesquisa sobre a escala 6x1.",
-                   style={'textAlign': 'center', 'marginBottom': '30px', 'color': COLORS['text'], 'fontSize': '16px'}),
-        ], style={'borderBottom': f'1px solid {COLORS["background"]}', 'paddingBottom': '15px', 'marginBottom': '20px'}),
-
-        # Form
-        html.Form([
-            # Form sections
-            html.Div([
-                # Left column - Work info
-                html.Div([
-                    html.Div([
-                        html.H4("Informações de Trabalho",
-                               style={'color': COLORS['title'], 'marginBottom': '20px', 'fontSize': '18px',
-                                     'borderBottom': f'2px solid {COLORS["secondary"]}', 'paddingBottom': '10px'}),
-
-                        # Escala 6x1
-                        html.Div([
-                            html.Label("Escala 6x1", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.RadioItems(
-                                id='input-escala6x1',
-                                options=[
-                                    {'label': ' Sim', 'value': 'Sim'},
-                                    {'label': ' Não', 'value': 'Não'}
-                                ],
-                                value='Sim',
-                                style={'marginBottom': '20px'},
-                                inputStyle={"marginRight": "5px"},
-                                labelStyle={'marginRight': '15px', 'display': 'inline-block'}
-                            ),
-                        ], style={'marginBottom': '15px'}),
-
-                        # Tempo na Escala
-                        html.Div([
-                            html.Label("Tempo na Escala 6x1", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.Dropdown(
-                                id='input-tempo-escala',
-                                options=[
-                                    {'label': 'Menos de 1 ano', 'value': 'Menos de 1 ano'},
-                                    {'label': '1-2 anos', 'value': '1-2 anos'},
-                                    {'label': '3-5 anos', 'value': '3-5 anos'},
-                                    {'label': 'Mais de 5 anos', 'value': 'Mais de 5 anos'}
-                                ],
-                                placeholder="Selecione o tempo",
-                                style={'marginBottom': '20px', 'color': COLORS['text']}
-                            ),
-                        ]),
-
-                        # Contrato
-                        html.Div([
-                            html.Label("Contrato de Trabalho", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.Dropdown(
-                                id='input-contrato',
-                                options=[
-                                    {'label': 'CLT', 'value': 'CLT'},
-                                    {'label': 'PJ', 'value': 'PJ'},
-                                    {'label': 'Temporário', 'value': 'Temporário'},
-                                    {'label': 'Outro', 'value': 'Outro'}
-                                ],
-                                placeholder="Selecione o contrato",
-                                style={'marginBottom': '20px', 'color': COLORS['text']}
-                            ),
-                        ]),
-
-                        # Horas
-                        html.Div([
-                            html.Label("Horas de Trabalho", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.Dropdown(
-                                id='input-horas',
-                                options=[
-                                    {'label': 'Até 30h semanais', 'value': 'Até 30h semanais'},
-                                    {'label': '30-40h semanais', 'value': '30-40h semanais'},
-                                    {'label': '40-44h semanais', 'value': '40-44h semanais'},
-                                    {'label': 'Mais de 44h semanais', 'value': 'Mais de 44h semanais'}
-                                ],
-                                placeholder="Selecione as horas",
-                                style={'marginBottom': '20px', 'color': COLORS['text']}
-                            ),
-                        ]),
-
-                        # Ocupação e Estado
-                        html.Div([
-                            html.Label("Ocupação", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.Input(
-                                id='input-ocupacao',
-                                type='text',
-                                placeholder="Digite a ocupação",
-                                style={'width': '100%', 'padding': '10px', 'marginBottom': '20px', 'borderRadius': '5px',
-                                      'border': f'1px solid {COLORS["background"]}'}
-                            ),
-                        ]),
-
-                        html.Div([
-                            html.Label("Estado", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.Dropdown(
-                                id='input-estado',
-                                options=[
-                                    {'label': estado, 'value': estado} for estado in sorted(df['EstadoTrabalho'].unique())
-                                ],
-                                placeholder="Selecione o estado",
-                                style={'marginBottom': '20px', 'color': COLORS['text']}
-                            ),
-                        ]),
-                    ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '10px',
-                             'boxShadow': '0 2px 5px rgba(0,0,0,0.05)', 'height': '100%'})
-                ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginRight': '2%'}),
-
-                # Right column - Personal info and impacts
-                html.Div([
-                    # Personal info
-                    html.Div([
-                        html.H4("Informações Pessoais",
-                               style={'color': COLORS['title'], 'marginBottom': '20px', 'fontSize': '18px',
-                                     'borderBottom': f'2px solid {COLORS["accent"]}', 'paddingBottom': '10px'}),
-
-                        # Sexo
-                        html.Div([
-                            html.Label("Sexo", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.RadioItems(
-                                id='input-sexo',
-                                options=[
-                                    {'label': ' Masculino', 'value': 'Masculino'},
-                                    {'label': ' Feminino', 'value': 'Feminino'},
-                                    {'label': ' Outro', 'value': 'Outro'}
-                                ],
-                                style={'marginBottom': '20px'},
-                                inputStyle={"marginRight": "5px"},
-                                labelStyle={'marginRight': '15px', 'display': 'inline-block'}
-                            ),
-                        ]),
-
-                        # Escolaridade
-                        html.Div([
-                            html.Label("Escolaridade", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.Dropdown(
-                                id='input-escolaridade',
-                                options=[
-                                    {'label': 'Ensino Fundamental', 'value': 'Ensino Fundamental'},
-                                    {'label': 'Ensino Médio', 'value': 'Ensino Médio'},
-                                    {'label': 'Ensino Superior', 'value': 'Ensino Superior'},
-                                    {'label': 'Pós-graduação', 'value': 'Pós-graduação'}
-                                ],
-                                placeholder="Selecione a escolaridade",
-                                style={'marginBottom': '20px', 'color': COLORS['text']}
-                            ),
-                        ]),
-
-                        # Rendimento
-                        html.Div([
-                            html.Label("Rendimento", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                            dcc.Dropdown(
-                                id='input-rendimento',
-                                options=[
-                                    {'label': 'Até 1 salário mínimo', 'value': 'Até 1 salário mínimo'},
-                                    {'label': '1-3 salários mínimos', 'value': '1-3 salários mínimos'},
-                                    {'label': '3-5 salários mínimos', 'value': '3-5 salários mínimos'},
-                                    {'label': 'Mais de 5 salários mínimos', 'value': 'Mais de 5 salários mínimos'}
-                                ],
-                                placeholder="Selecione o rendimento",
-                                style={'marginBottom': '20px', 'color': COLORS['text']}
-                            ),
-                        ]),
-
-                        # Impactos
-                        html.H4("Avaliação de Impactos",
-                               style={'color': COLORS['title'], 'marginTop': '30px', 'marginBottom': '20px', 'fontSize': '18px',
-                                     'borderBottom': f'2px solid {COLORS["accent"]}', 'paddingBottom': '10px'}),
-
-                        # Impacto Família
-                        html.Div([
-                            html.Div([
-                                html.Label("Impacto na Vida Familiar", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                                html.Div("👪", style={'position': 'absolute', 'right': '10px', 'top': '0px', 'fontSize': '20px'}),
-                            ], style={'position': 'relative'}),
-                            dcc.RadioItems(
-                                id='input-impacto-familia',
-                                options=[
-                                    {'label': ' Discordo totalmente', 'value': 'Discordo totalmente'},
-                                    {'label': ' Discordo', 'value': 'Discordo'},
-                                    {'label': ' Neutro', 'value': 'Neutro'},
-                                    {'label': ' Concordo', 'value': 'Concordo'},
-                                    {'label': ' Concordo totalmente', 'value': 'Concordo totalmente'}
-                                ],
-                                style={'marginBottom': '20px'},
-                                inputStyle={"marginRight": "5px"},
-                                labelStyle={'display': 'block', 'marginBottom': '5px'}
-                            ),
-                        ], style={'marginBottom': '15px'}),
-
-                        # Impacto Saúde Física
-                        html.Div([
-                            html.Div([
-                                html.Label("Impacto na Saúde Física", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                                html.Div("💪", style={'position': 'absolute', 'right': '10px', 'top': '0px', 'fontSize': '20px'}),
-                            ], style={'position': 'relative'}),
-                            dcc.RadioItems(
-                                id='input-impacto-fisica',
-                                options=[
-                                    {'label': ' Discordo totalmente', 'value': 'Discordo totalmente'},
-                                    {'label': ' Discordo', 'value': 'Discordo'},
-                                    {'label': ' Neutro', 'value': 'Neutro'},
-                                    {'label': ' Concordo', 'value': 'Concordo'},
-                                    {'label': ' Concordo totalmente', 'value': 'Concordo totalmente'}
-                                ],
-                                style={'marginBottom': '20px'},
-                                inputStyle={"marginRight": "5px"},
-                                labelStyle={'display': 'block', 'marginBottom': '5px'}
-                            ),
-                        ], style={'marginBottom': '15px'}),
-
-                        # Impacto Saúde Mental
-                        html.Div([
-                            html.Div([
-                                html.Label("Impacto na Saúde Mental", style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '8px'}),
-                                html.Div("🧠", style={'position': 'absolute', 'right': '10px', 'top': '0px', 'fontSize': '20px'}),
-                            ], style={'position': 'relative'}),
-                            dcc.RadioItems(
-                                id='input-impacto-mental',
-                                options=[
-                                    {'label': ' Discordo totalmente', 'value': 'Discordo totalmente'},
-                                    {'label': ' Discordo', 'value': 'Discordo'},
-                                    {'label': ' Neutro', 'value': 'Neutro'},
-                                    {'label': ' Concordo', 'value': 'Concordo'},
-                                    {'label': ' Concordo totalmente', 'value': 'Concordo totalmente'}
-                                ],
-                                style={'marginBottom': '20px'},
-                                inputStyle={"marginRight": "5px"},
-                                labelStyle={'display': 'block', 'marginBottom': '5px'}
-                            ),
-                        ], style={'marginBottom': '15px'}),
-                    ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '10px',
-                             'boxShadow': '0 2px 5px rgba(0,0,0,0.05)', 'height': '100%'})
-                ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-            ], style={'marginBottom': '25px'}),
-
-            # Textarea for impacts description
-            html.Div([
-                html.Div([
-                    html.Label("Descreva os impactos da escala 6x1 na sua vida",
-                              style={'fontWeight': 'bold', 'color': COLORS['title'], 'display': 'block', 'marginBottom': '10px'}),
-                    dcc.Textarea(
-                        id='input-impactos-texto',
-                        placeholder="Descreva aqui como a escala 6x1 impacta sua vida pessoal, familiar, saúde física e mental...",
-                        style={'width': '100%', 'height': '120px', 'padding': '15px', 'marginBottom': '20px',
-                              'borderRadius': '8px', 'border': f'1px solid {COLORS["background"]}',
-                              'fontSize': '14px'}
-                    ),
-                ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '10px',
-                         'boxShadow': '0 2px 5px rgba(0,0,0,0.05)'})
-            ], style={'marginBottom': '25px'}),
-
-            # Submit button
-            html.Div([
-                html.Button(
-                    '💾 Adicionar Dados',
-                    id='submit-button',
-                    n_clicks=0,
-                    style={
-                        'backgroundColor': COLORS['primary'],
-                        'color': 'white',
-                        'border': 'none',
-                        'padding': '12px 30px',
-                        'borderRadius': '8px',
-                        'cursor': 'pointer',
-                        'fontSize': '16px',
-                        'fontWeight': 'bold',
-                        'boxShadow': '0 2px 5px rgba(0,0,0,0.1)',
-                        'transition': 'all 0.3s ease',
-                    }
-                ),
-                html.Div(id='submit-output', style={'marginTop': '20px', 'padding': '10px', 'borderRadius': '5px'})
-            ], style={'textAlign': 'center', 'marginTop': '10px'})
-        ])
-    ], style=CARD_STYLE),
-])
+# Removed add_data_tab definition
 
 # Define the layout with tabs
 app.layout = html.Div(style=GLOBAL_STYLE, children=[
@@ -716,31 +455,8 @@ app.layout = html.Div(style=GLOBAL_STYLE, children=[
     ], style={'padding': '20px 0', 'backgroundColor': 'white', 'boxShadow': '0 2px 10px rgba(0,0,0,0.05)',
              'marginBottom': '30px', 'borderRadius': '0 0 10px 10px'}),
 
-    # Tabs with modern styling
-    html.Div([
-        dcc.Tabs(
-            id="tabs",
-            value='tab-dashboard',
-            children=[
-                dcc.Tab(
-                    label='📊 Dashboard',
-                    value='tab-dashboard',
-                    style=TAB_STYLE,
-                    selected_style=TAB_SELECTED_STYLE
-                ),
-                dcc.Tab(
-                    label='➕ Adicionar Dados',
-                    value='tab-add-data',
-                    style=TAB_STYLE,
-                    selected_style=TAB_SELECTED_STYLE
-                ),
-            ],
-            style={'marginBottom': '20px'}
-        ),
-    ], style={'marginBottom': '20px'}),
-
-    # Tab content
-    html.Div(id='tabs-content', style={'minHeight': '500px'}),
+    # Dashboard content
+    html.Div(dashboard_tab, style={'minHeight': '500px'}),
 
     # Footer
     html.Div([
@@ -754,16 +470,7 @@ app.layout = html.Div(style=GLOBAL_STYLE, children=[
     ], style={'marginTop': '30px', 'paddingBottom': '20px'})
 ])
 
-# Callback to update tab content
-@app.callback(
-    Output('tabs-content', 'children'),
-    Input('tabs', 'value')
-)
-def render_content(tab):
-    if tab == 'tab-dashboard':
-        return dashboard_tab
-    elif tab == 'tab-add-data':
-        return add_data_tab
+# Removed tab content callback
 
 # Callback to refresh dashboard
 @app.callback(
@@ -771,14 +478,9 @@ def render_content(tab):
      Output('fisica-bar-chart', 'figure'),
      Output('mental-bar-chart', 'figure'),
      Output('estado-bar-chart', 'figure')],
-    [Input('refresh-button', 'n_clicks'),
-     Input('tabs', 'value')]  # Adicionar tabs como input para atualizar quando mudar de aba
+    [Input('refresh-button', 'n_clicks')]
 )
-def refresh_dashboard(_, tab_value):
-    # Prevenir atualização se não estiver na aba do dashboard
-    if tab_value != 'tab-dashboard':
-        raise PreventUpdate
-
+def refresh_dashboard(_):
     # Connect to the SQLite database
     conn = sqlite3.connect('base.sqlite')
 
@@ -787,6 +489,44 @@ def refresh_dashboard(_, tab_value):
 
     # Close the connection
     conn.close()
+
+    # Recalcular KPIs (não afeta a interface diretamente, mas mantém os valores atualizados para próxima renderização)
+    global df, total_respondentes, escala_6x1_count, escala_6x1_percent
+    global homens_count, mulheres_count, homens_percent, mulheres_percent
+    global familia_resposta_frequente, familia_resposta_count, familia_resposta_percent
+    global fisica_resposta_frequente, fisica_resposta_count, fisica_resposta_percent
+    global mental_resposta_frequente, mental_resposta_count, mental_resposta_percent
+
+    # Atualizar o dataframe global
+    df = updated_df
+
+    # Recalcular todos os KPIs
+    total_respondentes = len(df)
+    escala_6x1_count = df[df['Escala6x1'] == 'Sim'].shape[0]
+    escala_6x1_percent = round((escala_6x1_count / total_respondentes) * 100, 1)
+
+    # Distribuição por sexo
+    sexo_counts = df['Sexo'].value_counts()
+    total_sexo = sexo_counts.sum()
+    homens_count = sexo_counts.get('Masculino', 0)
+    mulheres_count = sexo_counts.get('Feminino', 0)
+    homens_percent = round((homens_count / total_sexo) * 100)
+    mulheres_percent = round((mulheres_count / total_sexo) * 100)
+
+    # Impacto na vida familiar
+    familia_resposta_frequente = df['ImpactoVidaFamiliar'].value_counts().idxmax()
+    familia_resposta_count = df['ImpactoVidaFamiliar'].value_counts().max()
+    familia_resposta_percent = round((familia_resposta_count / total_respondentes) * 100)
+
+    # Impacto na saúde física
+    fisica_resposta_frequente = df['ImpactoSaudeFisica'].value_counts().idxmax()
+    fisica_resposta_count = df['ImpactoSaudeFisica'].value_counts().max()
+    fisica_resposta_percent = round((fisica_resposta_count / total_respondentes) * 100)
+
+    # Impacto na saúde mental
+    mental_resposta_frequente = df['ImpactoSaudeMental'].value_counts().idxmax()
+    mental_resposta_count = df['ImpactoSaudeMental'].value_counts().max()
+    mental_resposta_percent = round((mental_resposta_count / total_respondentes) * 100)
 
     # Define the order of responses
     order = ["Discordo totalmente", "Discordo", "Neutro", "Concordo", "Concordo totalmente"]
@@ -930,75 +670,7 @@ def refresh_dashboard(_, tab_value):
 
     return updated_familia_bar, updated_fisica_bar, updated_mental_bar, updated_estado_bar
 
-# Callback to handle form submission
-@app.callback(
-    Output('submit-output', 'children'),
-    Input('submit-button', 'n_clicks'),
-    [State('input-escala6x1', 'value'),
-     State('input-tempo-escala', 'value'),
-     State('input-contrato', 'value'),
-     State('input-horas', 'value'),
-     State('input-ocupacao', 'value'),
-     State('input-estado', 'value'),
-     State('input-sexo', 'value'),
-     State('input-escolaridade', 'value'),
-     State('input-rendimento', 'value'),
-     State('input-impacto-familia', 'value'),
-     State('input-impacto-fisica', 'value'),
-     State('input-impacto-mental', 'value'),
-     State('input-impactos-texto', 'value')]
-)
-def submit_form(n_clicks, escala6x1, tempo_escala, contrato, horas, ocupacao, estado,
-                sexo, escolaridade, rendimento, impacto_familia, impacto_fisica,
-                impacto_mental, impactos_texto):
-    if n_clicks == 0:
-        # Initial load, don't do anything
-        raise PreventUpdate
-
-    # Check if required fields are filled
-    required_fields = [escala6x1, tempo_escala, contrato, horas, estado, sexo,
-                      escolaridade, impacto_familia, impacto_fisica, impacto_mental]
-
-    if None in required_fields or '' in required_fields:
-        return html.Div([
-            html.P("Por favor, preencha todos os campos obrigatórios.",
-                  style={'color': COLORS['danger'], 'fontWeight': 'bold'})
-        ])
-
-    try:
-        # Connect to the database
-        conn = sqlite3.connect('base.sqlite')
-        cursor = conn.cursor()
-
-        # Insert the new data
-        cursor.execute('''
-            INSERT INTO Planilha1 (
-                Confirmacao, Escala6x1, TempoEscala6x1, ContratoTrabalho, HorasTrabalho,
-                Occupation_Respostas, EstadoTrabalho, Sexo, Escolaridade, Rendimento,
-                ImpactoVidaFamiliar, ImpactoSaudeFisica, ImpactoSaudeMental, Impactos
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            'Sim', escala6x1, tempo_escala, contrato, horas,
-            ocupacao, estado, sexo, escolaridade, rendimento,
-            impacto_familia, impacto_fisica, impacto_mental, impactos_texto
-        ))
-
-        # Commit the changes and close the connection
-        conn.commit()
-        conn.close()
-
-        # Return success message
-        return html.Div([
-            html.P("Dados adicionados com sucesso!",
-                  style={'color': COLORS['success'], 'fontWeight': 'bold'})
-        ])
-
-    except Exception as e:
-        # Return error message
-        return html.Div([
-            html.P(f"Erro ao adicionar dados: {str(e)}",
-                  style={'color': COLORS['danger'], 'fontWeight': 'bold'})
-        ])
+# Removed form submission callback
 
 # Run the app
 if __name__ == '__main__':

@@ -18,14 +18,13 @@ Um dashboard interativo para análise dos impactos da escala de trabalho 6x1 na 
 
 ## 🔍 Visão Geral
 
-Este dashboard foi desenvolvido para visualizar e analisar dados sobre os impactos da escala de trabalho 6x1 na vida dos trabalhadores. A aplicação permite visualizar estatísticas, gráficos e também adicionar novos dados à base.
+Este dashboard foi desenvolvido para visualizar e analisar dados sobre os impactos da escala de trabalho 6x1 na vida dos trabalhadores. A aplicação permite visualizar estatísticas e gráficos interativos baseados nos dados da planilha.
 
 ## ✨ Funcionalidades
 
 - **Visualização de Dados**: Gráficos interativos mostrando os impactos da escala 6x1 na vida familiar, saúde física e mental dos trabalhadores.
 - **KPIs**: Indicadores-chave de desempenho mostrando estatísticas importantes.
-- **Filtros**: Possibilidade de filtrar os dados por diferentes critérios.
-- **Adição de Dados**: Interface para adicionar novos dados à base.
+- **Atualização de Dados**: Possibilidade de atualizar os gráficos com novos dados da planilha.
 - **Design Responsivo**: Interface adaptável a diferentes tamanhos de tela.
 
 ## 📋 Requisitos
@@ -62,7 +61,7 @@ python app.py
 ```
 
 5. Acesse o dashboard no navegador:
-
+pyth
 ```
 http://127.0.0.1:8050/
 ```
@@ -71,26 +70,22 @@ http://127.0.0.1:8050/
 
 ### Dashboard
 
-1. Ao abrir o aplicativo, você verá a aba "Dashboard" com os seguintes elementos:
+1. Ao abrir o aplicativo, você verá o dashboard com os seguintes elementos:
    - **KPIs**: Indicadores-chave no topo mostrando estatísticas gerais.
    - **Gráficos de Impacto**: Visualizações dos impactos na vida familiar, saúde física e mental.
    - **Distribuição por Estado**: Gráfico mostrando a distribuição dos respondentes por estado.
 
-2. Para atualizar os dados após adicionar novas entradas, clique no botão "Atualizar Dashboard" no canto superior direito.
+2. Para atualizar os dados após modificar a planilha base, clique no botão "Atualizar Dashboard" no canto superior direito.
 
-### Adicionar Novos Dados
+### Atualização de Dados
 
-1. Clique na aba "Adicionar Dados" para acessar o formulário de entrada de dados.
+1. Para atualizar os dados do dashboard, modifique o arquivo Excel base e execute o script de conversão para SQLite:
 
-2. Preencha os campos do formulário:
-   - **Informações de Trabalho**: Escala 6x1, tempo na escala, contrato, horas, ocupação e estado.
-   - **Informações Pessoais**: Sexo, escolaridade e rendimento.
-   - **Avaliação de Impactos**: Impacto na vida familiar, saúde física e mental.
-   - **Descrição dos Impactos**: Campo de texto para descrever os impactos em detalhes.
+```bash
+python excel_to_sqlite.py
+```
 
-3. Clique no botão "Adicionar Dados" para salvar as informações na base de dados.
-
-4. Volte para a aba "Dashboard" e clique em "Atualizar Dashboard" para ver os novos dados refletidos nos gráficos.
+2. Em seguida, reinicie o aplicativo ou clique no botão "Atualizar Dashboard" para ver os novos dados refletidos nos gráficos.
 
 ## 📁 Estrutura do Projeto
 
