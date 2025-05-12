@@ -1,0 +1,10 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8050:8050"
+    volumes:
+      - .:/app
+    environment:
+      - DASH_DEBUG=false
+    command: python app.py

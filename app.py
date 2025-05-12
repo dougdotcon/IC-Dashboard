@@ -4,6 +4,7 @@ import plotly.express as px
 import pandas as pd
 import sqlite3
 from dash.exceptions import PreventUpdate
+from simple_nlp import get_impact_data_for_graph
 
 # Definir cores e estilo - Nova paleta profissional
 COLORS = {
@@ -348,10 +349,10 @@ tab3_content = html.Div([
         # Div para Impactos
         html.Div([
             html.Div([
-                html.H4("Outros Impactos", style={'color': COLORS['title'], 'marginBottom': '15px'}),
-                html.Div(id='impactos-container', style={'height': '300px'})
+                html.H4("Análise de Tópicos nas Respostas", style={'color': COLORS['title'], 'marginBottom': '15px'}),
+                html.Div(id='impactos-container', style={'height': '500px'})
             ], style=CARD_STYLE)
-        ], style={'width': '48%', 'display': 'inline-block', 'marginBottom': '20px'}),
+        ], style={'width': '100%', 'marginBottom': '20px'}),
 
         # Informações sobre os dados
         html.Div([
@@ -1609,34 +1610,100 @@ def update_impacto_graphs(n_clicks, tab):
     # Criar os gráficos
     graphs = create_impacto_graphs(updated_df)
 
-    # Placeholder para o gráfico de Impactos (que não será implementado agora)
-    empty_fig = px.bar(x=[0], y=[0], title="Outros Impactos")
-    empty_fig.update_layout(
-        title_font=dict(size=16, family="Segoe UI", color=COLORS['title']),
-        font=dict(family="Segoe UI"),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False),
-        annotations=[dict(
-            text="Dados não disponíveis",
-            showarrow=False,
-            font=dict(size=16, color=COLORS['text']),
-            xref="paper",
-            yref="paper",
-            x=0.5,
-            y=0.5
-        )]
-    )
+    # Obter os dados para o gráfico de análise de PLN
+    topics, counts = get_impact_data_for_graph(updated_df)
+
+    # Criar DataFrame para o gráfico
+    nlp_df = pd.DataFrame({
+        'Tópico': topics,
+        'Contagem': counts
+    })
+
+    # Ordenar o DataFrame para que os maiores valores apareçam no topo
+    # Para gráficos de barras horizontais, a primeira linha (índice 0) aparece na parte inferior
+    # Então, para ter os maiores valores no topo, ordenamos em ordem decrescente
+    nlp_df = nlp_df.sort_values('Contagem', ascending=False)
+
+    # Criar o gráfico de barras horizontais
+    if len(nlp_df) > 0:
+        nlp_fig = px.bar(
+            nlp_df,
+            y='Tópico',
+            x='Contagem',
+            title="Análise de Tópicos nas Respostas",
+            color_discrete_sequence=[COLORS['success']],  # Verde
+            orientation='h',
+            text='Contagem',
+            labels={'Tópico': 'Tópico Identificado', 'Contagem': 'Número de Ocorrências'},
+            height=450,
+        )
+
+        # Configurar o layout
+        nlp_fig.update_layout(
+            title_font=dict(size=16, family="Segoe UI", color=COLORS['title']),
+            font=dict(family="Segoe UI"),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=10, r=10, t=40, b=10),
+            xaxis_title="Número de Ocorrências",
+            yaxis_title="",
+        )
+
+        # Definir limites para posicionamento interno/externo baseado no valor
+        max_value = nlp_df['Contagem'].max() if len(nlp_df) > 0 else 0
+        threshold = max_value * 0.8  # 80% do valor máximo como limite
+
+        # Criar uma lista para armazenar as posições dos textos
+        text_positions = []
+        text_colors = []
+
+        # Determinar a posição e cor para cada barra
+        for value in nlp_df['Contagem']:
+            if value > threshold:
+                text_positions.append('inside')
+                text_colors.append('white')
+            else:
+                text_positions.append('outside')
+                text_colors.append('black')
+
+        # Atualizar as barras
+        nlp_fig.update_traces(
+            marker_color=COLORS['success'],
+            marker_line_color='rgba(0,0,0,0)',
+            opacity=0.8,
+            texttemplate='%{x}',
+            textposition=text_positions,
+            textfont=dict(color=text_colors),
+        )
+    else:
+        # Se não houver dados, criar um gráfico vazio
+        nlp_fig = px.bar(x=[0], y=[0], title="Análise de Tópicos nas Respostas")
+        nlp_fig.update_layout(
+            title_font=dict(size=16, family="Segoe UI", color=COLORS['title']),
+            font=dict(family="Segoe UI"),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            annotations=[dict(
+                text="Sem dados disponíveis",
+                showarrow=False,
+                font=dict(size=16, color=COLORS['text']),
+                xref="paper",
+                yref="paper",
+                x=0.5,
+                y=0.5
+            )]
+        )
 
     # Retornar os gráficos como componentes Dash
     return [
         dcc.Graph(figure=graphs['impacto_familia'], config={'displayModeBar': False}),
         dcc.Graph(figure=graphs['impacto_fisica'], config={'displayModeBar': False}),
         dcc.Graph(figure=graphs['impacto_mental'], config={'displayModeBar': False}),
-        dcc.Graph(figure=empty_fig, config={'displayModeBar': False})
+        dcc.Graph(figure=nlp_fig, config={'displayModeBar': False})
     ]
 
 # Run the app
 if __name__ == '__main__':
-    app.run(debug=True, port=8050)
+    app.run(debug=False, host='0.0.0.0', port=8050)
